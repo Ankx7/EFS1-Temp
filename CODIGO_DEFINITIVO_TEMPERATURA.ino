@@ -37,7 +37,7 @@ byte info;
 String lectura;
 
 int estadoHumedad;
-int temperaturaUmbral = 10;
+int temperaturaUmbral = 0;
 int temperatura;
 int numA;
 int numB;
@@ -46,7 +46,7 @@ int dataB;
 
 int mSeg;
 
-void ISR_timer (void) {
+void ISR_TIMER (void) {
   mSeg++;
   mSegAntiR++;
 }
@@ -167,11 +167,17 @@ void maquinaHumedad() {
       if (flag1 == 1) {
         temperaturaUmbral = temperaturaUmbral + 1;
         mSeg = 0;
+        digitalWrite(ledRojo, HIGH);
+        digitalWrite(ledVerde, LOW);
+        digitalWrite(BUZZER, LOW);
         estadoHumedad = SETTING;
       }
       if (flag2 == 1) {
         temperaturaUmbral = temperaturaUmbral - 1;
         mSeg = 0;
+        digitalWrite(ledRojo, HIGH);
+        digitalWrite(ledVerde, LOW);
+        digitalWrite(BUZZER, LOW);
         estadoHumedad = SETTING;
       }
       //mostrar 7 segmentos
@@ -186,12 +192,10 @@ void maquinaHumedad() {
       digitalWrite(latchPinB, HIGH);
 
       if (temperatura < temperaturaUmbral) {
-        Serial.println("BUZZER LOW");
         digitalWrite(BUZZER, LOW);
       }
       if (temperatura > temperaturaUmbral) {
-        Serial.println("BUZZER HIGH");
-        //digitalWrite(BUZZER, HIGH);
+        digitalWrite(BUZZER, HIGH);
       }
       break;
   }
