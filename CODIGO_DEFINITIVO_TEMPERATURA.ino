@@ -1,7 +1,18 @@
 #include <TimerOne.h>
 #include "DHT.h"
 
-#define DHTTYPE DHT22
+#define DHTTYPE DHT11
+
+//ESTADOS ANTIRREBOTE
+#define PRESS 0
+#define CONFIRM 1
+#define FREE 2
+
+int mSegAntiR;
+int boton;
+int estadoAntirrebote = PRESS;
+bool flag1 = 0;
+bool flag2 = 0;
 
 #define BUZZER 10
 #define BOT1 6
@@ -26,7 +37,7 @@ byte info;
 String lectura;
 
 int estadoHumedad;
-int temperaturaUmbral = 0;
+int temperaturaUmbral = 10;
 int temperatura;
 int numA;
 int numB;
@@ -42,11 +53,12 @@ void ISR_TIMER() {
   } else if (contar == false) {
     mSeg = 0;
   }
+  mSegAntiR++;
 }
 
 void setup() {
   Serial.begin(9600);
-  dht.begin();
+   dht.begin();
 
   pinMode(BUZZER, OUTPUT);
   pinMode(ledVerde, OUTPUT);
@@ -63,12 +75,56 @@ void setup() {
 
   Timer1.initialize(1000); //interrumpe cada un mili segundo
   Timer1.attachInterrupt(ISR_TIMER);
+
+      digitalWrite(latchPinA, LOW);
+      shiftOut(dataPinA, clockPinA, LSBFIRST, 2);
+      digitalWrite(latchPinA, HIGH);
+      digitalWrite(latchPinB, LOW);
+      shiftOut(dataPinB, clockPinB, LSBFIRST, 16);
+      digitalWrite(latchPinB, HIGH);
 }
 
 void loop() {
   maquinaHumedad();
+Serial.println(digitalRead(BOT1));
+  switch (estadoAntirrebote) {
+    case PRESS:
+      if (digitalRead(BOT1) == LOW) {
+        boton = BOT1;
+        estadoAntirrebote = CONFIRM;
+        mSegAntiR = 0;
+      }
+      if (digitalRead(BOT2) == LOW) {
+  boton = BOT2;
+        estadoAntirrebote = CONFIRM;
+        mSegAntiR = 0;
+      }
+      break;
 
-  //lectura temperatura
+    case CONFIRM:
+      if (digitalRead(boton) == LOW && mSegAntiR >= 15) {
+        estadoAntirrebote = FREE;
+      }
+      if (digitalRead(boton) == HIGH && mSegAntiR >= 15) {
+        estadoAntirrebote = PRESS;
+      }
+      break;
+
+    case FREE:
+      if (boton == BOT1) {
+        if (digitalRead(boton) == HIGH ) {
+          flag1 = 1;
+          estadoAntirrebote = PRESS;
+        }
+      }
+      if (boton == BOT2) {
+        if (digitalRead(boton) == HIGH) {
+          flag2 = 1;
+          estadoAntirrebote = PRESS;
+        }
+      }
+      break;
+  }
 }
 
 void maquinaHumedad() {
@@ -81,13 +137,15 @@ void maquinaHumedad() {
       break;
 
     case SETTING:
-      if (digitalRead(BOT1) == LOW) {
+      if (flag1 == 1) {
         temperaturaUmbral = temperaturaUmbral + 1;
+        flag1 = 0;
       }
-      if (digitalRead(BOT2) == LOW) {
+      if (flag2 == 1) {
         temperaturaUmbral = temperaturaUmbral - 1;
+        flag2 = 0;
       }
-      
+
       //mostrar 7 segmentos
       numA = temperaturaUmbral / 10; //con esto sacamos la decena
       numB = temperaturaUmbral - (numA * 10); //con esto sacamos la unidad
@@ -98,7 +156,7 @@ void maquinaHumedad() {
       digitalWrite(latchPinB, LOW);
       shiftOut(dataPinB, clockPinB, LSBFIRST, dataB);
       digitalWrite(latchPinB, HIGH);
-      
+
       if (mSeg >= 15000) {
         digitalWrite(ledRojo, LOW);
         digitalWrite(ledVerde, HIGH);
@@ -107,8 +165,8 @@ void maquinaHumedad() {
       break;
 
     case PRINCIPAL:
-      temperatura = dht.readTemperature();
-      
+     temperatura = dht.readTemperature();
+
       //mostrar 7 segmentos
       numA = temperatura / 10; //con esto sacamos la decena
       numB = temperatura - (numA * 10); //con esto sacamos la unidad
@@ -120,11 +178,13 @@ void maquinaHumedad() {
       shiftOut(dataPinB, clockPinB, LSBFIRST, dataB);
       digitalWrite(latchPinB, HIGH);
 
-      if (temperatura < temperaturaUmbral){
+      if (temperatura < temperaturaUmbral) {
+       Serial.println("BUZZER LOW");
         digitalWrite(BUZZER, LOW);
       }
-      if (temperatura > temperaturaUmbral){
-        digitalWrite(BUZZER, HIGH);
+      if (temperatura > temperaturaUmbral) {
+        Serial.println("BUZZER HIGH");
+        //digitalWrite(BUZZER, HIGH);
       }
       break;
   }
@@ -195,3 +255,10 @@ void equivalencia() {
       break;
   }
 }
+
+
+  void ISR_timer (void)
+  {
+    mSeg++;
+    mSegAntiR++;
+  }
