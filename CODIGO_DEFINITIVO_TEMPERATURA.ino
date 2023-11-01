@@ -45,20 +45,15 @@ int dataA;
 int dataB;
 
 int mSeg;
-boolean contar = false;
 
-void ISR_TIMER() {
-  if (contar == true) {
-    mSeg = mSeg + 1;
-  } else if (contar == false) {
-    mSeg = 0;
-  }
+void ISR_timer (void) {
+  mSeg++;
   mSegAntiR++;
 }
 
 void setup() {
   Serial.begin(9600);
-   dht.begin();
+  dht.begin();
 
   pinMode(BUZZER, OUTPUT);
   pinMode(ledVerde, OUTPUT);
@@ -76,17 +71,17 @@ void setup() {
   Timer1.initialize(1000); //interrumpe cada un mili segundo
   Timer1.attachInterrupt(ISR_TIMER);
 
-      digitalWrite(latchPinA, LOW);
-      shiftOut(dataPinA, clockPinA, LSBFIRST, 2);
-      digitalWrite(latchPinA, HIGH);
-      digitalWrite(latchPinB, LOW);
-      shiftOut(dataPinB, clockPinB, LSBFIRST, 16);
-      digitalWrite(latchPinB, HIGH);
+  digitalWrite(latchPinA, LOW);
+  shiftOut(dataPinA, clockPinA, LSBFIRST, 2);
+  digitalWrite(latchPinA, HIGH);
+  digitalWrite(latchPinB, LOW);
+  shiftOut(dataPinB, clockPinB, LSBFIRST, 16);
+  digitalWrite(latchPinB, HIGH);
 }
 
 void loop() {
   maquinaHumedad();
-Serial.println(digitalRead(BOT1));
+  Serial.println(digitalRead(BOT1));
   switch (estadoAntirrebote) {
     case PRESS:
       if (digitalRead(BOT1) == LOW) {
@@ -95,7 +90,7 @@ Serial.println(digitalRead(BOT1));
         mSegAntiR = 0;
       }
       if (digitalRead(BOT2) == LOW) {
-  boton = BOT2;
+        boton = BOT2;
         estadoAntirrebote = CONFIRM;
         mSegAntiR = 0;
       }
@@ -132,18 +127,20 @@ void maquinaHumedad() {
     case INIT:
       digitalWrite(ledVerde, LOW);
       digitalWrite(ledRojo, HIGH);
+      mSeg = 0;
       estadoHumedad = SETTING;
-      contar = true;
       break;
 
     case SETTING:
       if (flag1 == 1) {
         temperaturaUmbral = temperaturaUmbral + 1;
         flag1 = 0;
+        mSeg = 0;
       }
       if (flag2 == 1) {
         temperaturaUmbral = temperaturaUmbral - 1;
         flag2 = 0;
+        mSeg = 0;
       }
 
       //mostrar 7 segmentos
@@ -165,8 +162,18 @@ void maquinaHumedad() {
       break;
 
     case PRINCIPAL:
-     temperatura = dht.readTemperature();
+      temperatura = dht.readTemperature();
 
+      if (flag1 == 1) {
+        temperaturaUmbral = temperaturaUmbral + 1;
+        mSeg = 0;
+        estadoHumedad = SETTING;
+      }
+      if (flag2 == 1) {
+        temperaturaUmbral = temperaturaUmbral - 1;
+        mSeg = 0;
+        estadoHumedad = SETTING;
+      }
       //mostrar 7 segmentos
       numA = temperatura / 10; //con esto sacamos la decena
       numB = temperatura - (numA * 10); //con esto sacamos la unidad
@@ -179,7 +186,7 @@ void maquinaHumedad() {
       digitalWrite(latchPinB, HIGH);
 
       if (temperatura < temperaturaUmbral) {
-       Serial.println("BUZZER LOW");
+        Serial.println("BUZZER LOW");
         digitalWrite(BUZZER, LOW);
       }
       if (temperatura > temperaturaUmbral) {
@@ -255,10 +262,3 @@ void equivalencia() {
       break;
   }
 }
-
-
-  void ISR_timer (void)
-  {
-    mSeg++;
-    mSegAntiR++;
-  }
