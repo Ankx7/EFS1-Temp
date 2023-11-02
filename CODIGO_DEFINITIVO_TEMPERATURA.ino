@@ -153,7 +153,9 @@ void maquinaHumedad() {
       digitalWrite(latchPinB, LOW);
       shiftOut(dataPinB, clockPinB, LSBFIRST, dataB);
       digitalWrite(latchPinB, HIGH);
-
+      
+        digitalWrite(BUZZER, LOW);
+        
       if (mSeg >= 15000) {
         digitalWrite(ledRojo, LOW);
         digitalWrite(ledVerde, HIGH);
@@ -169,7 +171,6 @@ void maquinaHumedad() {
         mSeg = 0;
         digitalWrite(ledRojo, HIGH);
         digitalWrite(ledVerde, LOW);
-        digitalWrite(BUZZER, LOW);
         estadoHumedad = SETTING;
       }
       if (flag2 == 1) {
@@ -177,7 +178,6 @@ void maquinaHumedad() {
         mSeg = 0;
         digitalWrite(ledRojo, HIGH);
         digitalWrite(ledVerde, LOW);
-        digitalWrite(BUZZER, LOW);
         estadoHumedad = SETTING;
       }
       //mostrar 7 segmentos
